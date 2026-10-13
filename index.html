@@ -1,0 +1,613 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Krimskrams Casino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: sticky glass header + tab bar, content in a 1180px column; items are trading cards with tier-colored foil */
+:root{
+  --bg:#0b0a12;--panel:#15131f;--panel2:#1e1b2c;--line:#2d2942;--fg:#f4f0fc;--mut:#9d96b6;
+  --gold:#ffc44d;--hot:#ff4f8b;--ok:#3ddc97;--bad:#ff6161;
+  --com:#8e8aa3;--unc:#4fd1c5;--rare:#5b8cff;--epi:#c06cff;--leg:#ffc44d;
+  --display:"Unbounded",system-ui,sans-serif;--body:"Manrope",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--body);
+  background-image:radial-gradient(900px 500px at 85% -10%,#ff4f8b22,transparent 60%),radial-gradient(800px 600px at -10% 10%,#5b8cff1f,transparent 60%),radial-gradient(700px 500px at 50% 110%,#ffc44d14,transparent 60%);background-attachment:fixed}
+button{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:#0b0a12cc;backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.hrow{display:flex;align-items:center;gap:18px;padding-block:14px;flex-wrap:wrap}
+.logo{font:900 20px/1 var(--display);letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.logo .chip{width:30px;height:30px;border-radius:50%;background:conic-gradient(var(--gold) 0 25%,var(--hot) 0 50%,var(--gold) 0 75%,var(--hot) 0);box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--gold),0 0 24px #ffc44d66;position:relative}
+.logo .chip::after{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--bg)}
+.logo em{font-style:normal;background:linear-gradient(90deg,var(--gold),var(--hot));-webkit-background-clip:text;background-clip:text;color:transparent}
+.worth{margin-left:auto;text-align:right}
+.worth small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--mut)}
+.worth b{font:700 20px var(--mono);color:var(--gold)}
+nav{display:flex;gap:4px;padding-bottom:10px;overflow-x:auto}
+nav button{background:none;border:0;padding:9px 16px;border-radius:999px;color:var(--mut);font-weight:800;cursor:pointer;white-space:nowrap;position:relative}
+nav button:hover{color:var(--fg);background:var(--panel)}
+nav button.on{color:#140f05;background:linear-gradient(135deg,var(--gold),#ff9b4d)}
+nav .badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:9px;background:var(--hot);color:#fff;font-size:11px}
+main{padding-block:28px 80px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(28px,5vw,46px);font-weight:900;line-height:1.05}
+h2{font-size:20px;font-weight:700}
+h3{font-size:15px;font-weight:700}
+.mut{color:var(--mut)}.small{font-size:13px}
+.eyebrow{font:700 11px var(--mono);text-transform:uppercase;letter-spacing:.16em;color:var(--hot)}
+.stack{display:flex;flex-direction:column;gap:18px}
+.between{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:20px;padding:22px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:800px){.cols{grid-template-columns:1fr}}
+.btn{border:0;cursor:pointer;padding:12px 22px;border-radius:14px;font-weight:800;background:linear-gradient(135deg,var(--gold),#ff9b4d);color:#160f03;box-shadow:0 8px 24px -8px #ffc44d88;transition:transform .15s,filter .15s}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn.ghost{background:var(--panel2);color:var(--fg);border:1px solid var(--line);box-shadow:none}
+.btn.hot{background:linear-gradient(135deg,var(--hot),#ff7a59);color:#fff;box-shadow:0 8px 24px -8px #ff4f8b88}
+.btn.sm{padding:7px 14px;font-size:13px;border-radius:10px}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+input[type=text],textarea{width:100%;background:#0e0c17;border:1px solid var(--line);border-radius:12px;padding:11px 14px;color:var(--fg);font:inherit}
+input[type=text]:focus,textarea:focus{border-color:var(--gold);outline:none}
+
+/* item cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:14px}
+.grid.sm{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+.card{--t:var(--com);position:relative;border-radius:16px;padding:8px;background:linear-gradient(160deg,color-mix(in srgb,var(--t) 30%,var(--panel2)),var(--panel) 55%);border:1px solid color-mix(in srgb,var(--t) 45%,transparent);cursor:default;transition:transform .2s,box-shadow .2s;overflow:hidden;min-width:0}
+.card.pick{cursor:pointer}
+.card:hover{transform:translateY(-3px) rotate(-.4deg);box-shadow:0 16px 40px -14px color-mix(in srgb,var(--t) 70%,transparent)}
+.card.sel{box-shadow:0 0 0 3px var(--gold),0 16px 40px -14px #ffc44d99;transform:translateY(-3px)}
+.card.sel::before{content:"✓";position:absolute;z-index:3;top:12px;right:12px;width:26px;height:26px;border-radius:50%;background:var(--gold);color:#160f03;display:grid;place-items:center;font-weight:900}
+.card .art{aspect-ratio:1;border-radius:11px;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--t) 35%,transparent),#0c0a14 75%);display:grid;place-items:center;overflow:hidden;position:relative;max-width:100%}
+.card .art img{width:100%;height:100%;object-fit:cover}
+.card .art img.gen{object-fit:contain;padding:10%;filter:drop-shadow(0 8px 14px #0008)}
+.card .tag{position:absolute;left:8px;bottom:8px;font:700 9px var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border-radius:6px;background:#0009;color:var(--t);backdrop-filter:blur(4px)}
+.card .ai{position:absolute;right:8px;bottom:8px;font:700 9px var(--mono);padding:3px 6px;border-radius:6px;background:#0009;color:var(--mut)}
+.card .meta{padding:9px 4px 3px}
+.card .nm{font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+.card .val{font:700 15px var(--mono);color:var(--t)}
+.card .why{font-size:12px;color:var(--mut);margin-top:3px;line-height:1.35}
+.grid.sm .why{display:none}
+.t-unc{--t:var(--unc)}.t-rare{--t:var(--rare)}.t-epi{--t:var(--epi)}.t-leg{--t:var(--leg)}
+.t-epi::after,.t-leg::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;mix-blend-mode:color-dodge;opacity:.25;
+  background:linear-gradient(115deg,transparent 30%,#fff6 45%,#7cf8 50%,#f7c8 55%,transparent 70%);background-size:250% 250%;animation:foil 5s linear infinite}
+@keyframes foil{from{background-position:120% 0}to{background-position:-120% 0}}
+.empty{border:1.5px dashed var(--line);border-radius:16px;padding:28px;text-align:center;color:var(--mut)}
+
+/* onboarding */
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;margin-bottom:28px}
+@media(max-width:800px){.hero{grid-template-columns:1fr}}
+.hero p{font-size:17px;color:var(--mut);max-width:52ch}
+.fan{position:relative;height:220px}
+.fan .card{position:absolute;width:150px;top:10px;left:50%}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.slot{display:grid;grid-template-columns:86px 1fr;gap:12px;padding:14px;border-radius:16px;background:var(--panel);border:1px solid var(--line)}
+.slot.filled{border-color:#ffc44d66}
+.drop{width:86px;height:86px;border-radius:12px;border:1.5px dashed var(--line);display:grid;place-items:center;cursor:pointer;color:var(--mut);font-size:11px;text-align:center;overflow:hidden;position:relative;background:#0e0c17}
+.drop:hover{border-color:var(--gold);color:var(--fg)}
+.drop img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.drop input{display:none}
+.slot .f{display:flex;flex-direction:column;gap:8px;min-width:0}
+.slot textarea{resize:none;height:44px;font-size:13px;padding:8px 12px}
+.slot .n{font:700 11px var(--mono);color:var(--mut)}
+.counter{font:700 14px var(--mono)}
+.prog{height:8px;border-radius:4px;background:var(--panel2);overflow:hidden}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--hot));transition:width .4s}
+.working .art{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{filter:brightness(1.6)}}
+
+/* people */
+.ppl{display:flex;flex-direction:column;gap:8px}
+.person{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.person.on{border-color:var(--gold);background:#ffc44d12}
+.person .grow{flex:1;min-width:0}
+.person .grow b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:800;color:#fff;overflow:hidden;background:var(--c,#5b8cff)}
+.av img{width:100%;height:100%;object-fit:cover}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chipbtn{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;border-radius:999px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-weight:700}
+.chipbtn .av{width:28px;height:28px;font-size:12px}
+.chipbtn.on{border-color:var(--gold);background:#ffc44d1a}
+.seg{display:inline-flex;padding:4px;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.seg button{border:0;background:none;padding:9px 18px;border-radius:10px;font-weight:800;color:var(--mut);cursor:pointer}
+.seg button.on{background:var(--panel2);color:var(--fg);box-shadow:0 0 0 1px var(--line)}
+
+/* deal bar */
+.dealbar{position:sticky;bottom:12px;z-index:10;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:16px 20px;border-radius:20px;background:#15131fee;backdrop-filter:blur(12px);border:1px solid var(--line);box-shadow:0 20px 50px -20px #000}
+.dealbar .side{font:700 18px var(--mono)}
+.odds{flex:1;min-width:180px}
+.odds .bar{height:10px;border-radius:5px;background:var(--hot);overflow:hidden;margin-top:6px}
+.odds .bar i{display:block;height:100%;background:var(--gold);transition:width .3s}
+.offer{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;padding:16px;border-radius:16px;background:var(--panel);border:1px solid var(--line)}
+@media(max-width:700px){.offer{grid-template-columns:1fr}}
+.offer .mid{text-align:center;font:900 13px var(--display);color:var(--hot)}
+.minis{display:flex;gap:6px;flex-wrap:wrap}
+.mini{width:52px;height:52px;border-radius:10px;overflow:hidden;background:#0c0a14;border:1px solid var(--line);position:relative}
+.mini img{width:100%;height:100%;object-fit:cover}
+.mini img.gen{object-fit:contain;padding:4px}
+.pill{display:inline-block;font:700 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:var(--panel2);color:var(--mut)}
+.pill.won{background:#3ddc9722;color:var(--ok)}.pill.lost{background:#ff616122;color:var(--bad)}
+
+/* coin modal */
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:#05040acc;backdrop-filter:blur(8px);padding:20px}
+.modal .box{text-align:center;max-width:440px;width:100%}
+.coinwrap{perspective:900px;height:220px;display:grid;place-items:center}
+.coin{width:180px;height:180px;position:relative;transform-style:preserve-3d}
+.coin .face{position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;display:grid;place-items:center;font:900 54px var(--display);color:#fff;border:8px solid var(--gold);box-shadow:inset 0 0 0 4px #0004,0 0 40px #ffc44d55;overflow:hidden}
+.coin .face img{width:100%;height:100%;object-fit:cover}
+.coin .back{transform:rotateY(180deg)}
+.result{font:900 30px var(--display);margin-top:18px;min-height:40px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;background:var(--panel2);border:1px solid var(--line);padding:12px 20px;border-radius:14px;box-shadow:0 20px 40px -10px #000;font-weight:700;max-width:calc(100% - 32px)}
+/* live trade window: partner row on top, your row mirrored at the bottom */
+.tw{border-radius:22px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
+.trow{display:grid;grid-template-columns:1fr 1.4fr 1fr}
+.trow>*{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px 10px;border:0;background:var(--panel2);font-weight:800;min-height:96px}
+.trow>*+*{border-left:1px solid var(--line)}
+.trow.top{border-bottom:1px solid var(--line)}.trow.bot{border-top:1px solid var(--line)}
+.trow button{cursor:pointer;transition:background .15s}
+.trow button:hover{background:#2a2640}
+.trow svg{width:40px;height:40px}
+.trow .lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}
+.okcell svg{opacity:.25;filter:grayscale(1)}
+.okcell.lit{background:#3ddc9718}.okcell.lit svg{opacity:1;filter:none}.okcell.lit .lbl{color:var(--ok)}
+.trow .who{flex-direction:row;gap:10px}
+.tmid{display:grid;grid-template-rows:auto auto;min-height:280px}
+.tside{padding:16px;display:flex;flex-direction:column;gap:10px}
+.tside+.tside{border-top:1px dashed var(--line);background:#ffc44d06}
+.tside .grid.sm .card.pick:hover::before{content:"×";position:absolute;z-index:3;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:var(--bad);color:#fff;display:grid;place-items:center;font-weight:900}
+.picker{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:20px;max-width:760px;width:100%;max-height:80vh;overflow:auto;text-align:left}
+
+/* case reel */
+.reelbox{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#09080f;padding-block:18px}
+.reelbox::before,.reelbox::after{content:"";position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none}
+.reelbox::before{left:0;background:linear-gradient(90deg,#09080f,transparent)}.reelbox::after{right:0;background:linear-gradient(270deg,#09080f,transparent)}
+.reel{display:flex;gap:10px;will-change:transform}
+.reel .card{flex:none;width:150px}
+.reel .card .why{display:none}
+.marker{position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;background:var(--gold);z-index:3;box-shadow:0 0 16px var(--gold)}
+.marker::before,.marker::after{content:"";position:absolute;left:50%;transform:translateX(-50%);border:9px solid transparent}
+.marker::before{top:0;border-top-color:var(--gold)}.marker::after{bottom:0;border-bottom-color:var(--gold)}
+.odds-list{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto}
+.odds-list .r{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:6px 8px;border-radius:10px;background:var(--panel)}
+.odds-list .mini{width:44px;height:44px}
+.odds-list b{font:700 13px var(--mono)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head><body>
+<header>
+  <div class="wrap">
+    <div class="hrow">
+      <div class="logo"><span class="chip"></span><span>Krimskrams <em>Casino</em></span></div>
+      <div class="worth" id="worth" hidden><small id="meName">Dein Inventar ist wert</small><b id="worthVal">0 €</b></div>
+    </div>
+    <nav id="nav" hidden>
+      <button data-t="inv" class="on">Inventar</button>
+      <button data-t="case">Kisten</button>
+      <button data-t="deal">Zocken &amp; Traden</button>
+      <button data-t="inbox">Angebote <span class="badge" id="badge" hidden></span></button>
+      <button data-t="friends">Freunde</button>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="app">
+  <div class="empty">Casino wird geöffnet…</div>
+</main>
+<div class="toast" id="toast" hidden></div>
+<div class="modal" id="modal" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const SB_URL="https://lrejclzhrkzgciejmtns.supabase.co";
+const SB_KEY="sb_publishable_6yhdm-hIwmUbNLF6qtNFCA_0ZZxbywE";
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const eur=v=>Math.round(v).toLocaleString("de-DE")+" €";
+const tier=v=>v>=2000?["Legendär","leg"]:v>=500?["Episch","epi"]:v>=100?["Selten","rare"]:v>=25?["Gut","unc"]:["Gewöhnlich","com"];
+const sum=a=>a.reduce((s,i)=>s+(i?.value||0),0);
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+let me=null;
+const S={items:[],friends:[],offers:[],trades:[],profiles:{},mode:null,tab:"inv",friendSel:null,dealType:"flip",give:new Set(),take:new Set(),stake:new Set(),spinning:false,viewFriend:null,tStatus:{}};
+let draft=[];
+
+function toast(t){const e=$("#toast");e.textContent=t;e.hidden=false;clearTimeout(e._t);e._t=setTimeout(()=>e.hidden=true,3500)}
+function lsGet(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+const errMsg=e=>e?.message||String(e);
+
+const mine=()=>S.items.filter(i=>i.owner===me).sort((a,b)=>b.value-a.value);
+const itemsOf=u=>S.items.filter(i=>i.owner===u).sort((a,b)=>b.value-a.value);
+const item=id=>S.items.find(i=>i.id===id);
+const pname=id=>id===me?"Du":(S.profiles[id]?.name||"Jemand");
+function avatar(id,cls="av"){const p=S.profiles[id]||{};const n=p.name||"?";return `<span class="${cls}" style="--c:${esc(p.color||"#5b8cff")}">${esc(n.trim()[0]?.toUpperCase()||"?")}</span>`}
+const friendIds=()=>S.friends.filter(f=>f.status==="ok").map(f=>f.users.find(u=>u!==me));
+
+function card(i,opts={}){const [tn,tc]=tier(i.value);
+  return `<div class="card t-${tc} ${opts.pick?"pick":""} ${opts.sel?"sel":""}" ${opts.pick?`data-pick="${esc(i.id)}" tabindex="0" role="button"`:""}>
+  <div class="art">${i.img?`<img class="${i.aiImg?"gen":""}" src="${esc(i.img)}" alt="">`:""}<span class="tag">${tn}</span>${i.aiImg?'<span class="ai">KI-Bild</span>':""}</div>
+  <div class="meta"><div class="nm">${esc(i.name)}</div><div class="val">≈ ${eur(i.value)}</div>${i.reason?`<div class="why">${esc(i.reason)}</div>`:""}</div></div>`}
+const mini=i=>i?`<div class="mini" title="${esc(i.name)} · ${eur(i.value)}">${i.img?`<img class="${i.aiImg?"gen":""}" src="${esc(i.img)}" alt="">`:""}</div>`:`<div class="mini" title="nicht mehr da"></div>`;
+
+/* ---------- Daten laden ---------- */
+const norm=r=>({...r,aiImg:r.ai_img});
+async function loadItems(){const {data,error}=await sb.from("items").select("*").order("created_at");if(!error)S.items=data.map(norm)}
+async function loadProfiles(){const {data}=await sb.from("profiles").select("id,name,color");if(data){S.profiles={};data.forEach(p=>S.profiles[p.id]=p)}}
+async function loadFriends(){const {data}=await sb.from("friends").select("*");if(data)S.friends=data}
+async function loadOffers(){const {data}=await sb.from("offers").select("*").order("created_at",{ascending:false}).limit(60);if(data){S.offers=data;checkResults()}}
+async function loadTrades(){const {data}=await sb.from("trades").select("*");if(!data)return;S.trades=data;
+  data.forEach(t=>{const prev=S.tStatus[t.id];S.tStatus[t.id]=t.status;
+    if(prev==="open"&&t.status==="done")toast("Tausch abgeschlossen!");
+    if(prev==="open"&&t.status==="cancelled"&&t.cancel_by!==me)toast(pname(t.users.find(u=>u!==me))+" hat den Tausch abgebrochen.")})}
+const loaders={items:loadItems,profiles:loadProfiles,friends:loadFriends,offers:loadOffers,trades:loadTrades};
+const timers={};
+function reload(table){clearTimeout(timers[table]);timers[table]=setTimeout(async()=>{await loaders[table]();refresh()},250)}
+
+/* ---------- Start ---------- */
+(async()=>{
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session)return vWelcome();
+  me=session.user.id;
+  await loadProfiles();
+  if(!S.profiles[me])return vWelcome();
+  start();
+})();
+
+function vWelcome(){
+  $("#app").innerHTML=`<section class="hero"><div class="stack"><span class="eyebrow">Willkommen am Tisch</span>
+    <h1>Wie sollen dich die anderen nennen?</h1>
+    <p>Unter diesem Namen finden dich deine Freunde. Dein Konto wird in diesem Browser gespeichert.</p>
+    <form id="wf" class="stack" style="max-width:420px">
+      <input type="text" id="wname" placeholder="z. B. FidgetKing" maxlength="20" autocomplete="off">
+      <button class="btn" id="wgo">Los geht's</button>
+    </form></div>
+    <div class="fan" aria-hidden="true">${[{name:"Fidget Spinner",value:6},{name:"Nintendo Switch",value:180},{name:"Goldkette 14K",value:640}].map((d,k)=>`<div style="position:absolute;left:50%;top:10px;width:150px;transform:translateX(calc(-50% + ${(k-1)*95}px)) rotate(${(k-1)*9}deg) translateY(${Math.abs(k-1)*14}px)">${card({...d,img:""})}</div>`).join("")}</div></section>`;
+  $("#wf").onsubmit=async e=>{e.preventDefault();const name=$("#wname").value.trim();
+    if(name.length<2)return toast("Der Name braucht mindestens 2 Zeichen.");
+    $("#wgo").disabled=true;
+    try{
+      if(!me){const {data,error}=await sb.auth.signInAnonymously();if(error)throw error;me=data.user.id}
+      const colors=["#5b8cff","#ff4f8b","#3ddc97","#c06cff","#ff9b4d","#4fd1c5"];
+      const {error}=await sb.from("profiles").insert({id:me,name,color:colors[Math.random()*colors.length|0]});
+      if(error){if(error.code==="23505")throw new Error("Den Namen hat schon jemand. Nimm einen anderen.");throw error}
+      await loadProfiles();start();
+    }catch(x){toast(errMsg(x));$("#wgo").disabled=false}};
+}
+
+async function start(){
+  $("#app").innerHTML=`<div class="empty">Inventar wird geladen…</div>`;
+  await Promise.all([loadItems(),loadFriends(),loadOffers(),loadTrades()]);
+  const ch=sb.channel("casino");
+  Object.keys(loaders).forEach(t=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},()=>reload(t)));
+  ch.subscribe();
+  refresh();
+}
+
+function refresh(){
+  if(S.mode==="onboard"||S.mode==="processing")return;
+  if(mine().length<5&&S.mode!=="app"){startOnboard(5-mine().length,true);return}
+  S.mode="app";render();
+}
+
+/* ---------- Sachen eintragen ---------- */
+function startOnboard(need,first){
+  S.mode="onboard";S.need=need;S.first=first;
+  draft=Array.from({length:Math.max(need,first?5:1)},()=>({name:"",note:"",photo:null}));
+  $("#nav").hidden=!!first;$("#worth").hidden=!!first;
+  $("#app").innerHTML=`
+  ${first?`<div class="stack" style="margin-bottom:24px"><span class="eyebrow">Hallo ${esc(S.profiles[me]?.name)}</span>
+    <h1>Pack deinen Krimskrams auf den Tisch.</h1>
+    <p class="mut" style="font-size:17px;max-width:60ch;margin:0">Trag mindestens ${need} Sachen ein, die du wirklich hast. Die KI schätzt den Wert. Ohne Foto malt sie ein passendes Bild.</p></div>`
+  :`<div class="between" style="margin-bottom:22px"><div class="stack" style="gap:6px"><span class="eyebrow">Inventar erweitern</span><h1>Neue Sachen eintragen</h1></div><button class="btn ghost" id="cancelAdd">Abbrechen</button></div>`}
+  <p class="small mut" style="margin:0 0 16px">Fotos und Namen gehen zur Wertschätzung an Googles Gratis-KI. Lad keine Fotos mit Gesichtern oder privaten Infos hoch.</p>
+  <div class="slots" id="slots"></div>
+  <div class="between" style="margin-top:22px">
+    <button class="btn ghost" id="more">+ Noch eine Sache</button>
+    <div style="display:flex;align-items:center;gap:16px"><span class="counter" id="cnt"></span><button class="btn" id="go">Von der KI schätzen lassen</button></div>
+  </div>`;
+  renderSlots();
+  $("#more").onclick=()=>{draft.push({name:"",note:"",photo:null});renderSlots()};
+  $("#go").onclick=processDraft;
+  const c=$("#cancelAdd");if(c)c.onclick=()=>{S.mode="app";render()};
+}
+function renderSlots(){
+  $("#slots").innerHTML=draft.map((d,k)=>`<div class="slot ${d.name.trim()?"filled":""}">
+    <label class="drop" for="ph${k}">${d.photo?`<img src="${d.photo}" alt="">`:"+ Foto<br>(optional)"}<input type="file" id="ph${k}" accept="image/*"></label>
+    <div class="f"><span class="n">SACHE ${String(k+1).padStart(2,"0")}</span>
+    <input type="text" id="nm${k}" placeholder="z. B. AirPods Pro 2" value="${esc(d.name)}" maxlength="60">
+    <textarea id="nt${k}" placeholder="Zustand, Marke, Alter …" maxlength="140">${esc(d.note)}</textarea></div></div>`).join("");
+  draft.forEach((d,k)=>{
+    $("#nm"+k).oninput=e=>{d.name=e.target.value;e.target.closest(".slot").classList.toggle("filled",!!d.name.trim());count()};
+    $("#nt"+k).oninput=e=>d.note=e.target.value;
+    $("#ph"+k).onchange=async e=>{const f=e.target.files[0];if(!f)return;try{d.photo=await shrink(f);renderSlots()}catch(x){toast("Das Bild ließ sich nicht lesen.")}};
+  });count();
+}
+function count(){const n=draft.filter(d=>d.name.trim()).length;const need=S.need>0?S.need:1;
+  $("#cnt").textContent=`${n} / ${need}${S.first?" mindestens":""}`;$("#cnt").style.color=n>=need?"var(--ok)":"var(--mut)";$("#go").disabled=n<need}
+function shrink(file){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const m=360,s=Math.min(1,m/Math.max(img.width,img.height));
+  const c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+  URL.revokeObjectURL(img.src);res(c.toDataURL("image/jpeg",.72))};img.onerror=rej;img.src=URL.createObjectURL(file)})}
+
+async function appraise(r,onWait){
+  for(let t=0;t<6;t++){
+    const {data,error}=await sb.functions.invoke("appraise",{body:{name:r.name.trim(),note:r.note.trim(),photo:r.photo||""}});
+    if(!error)return data.item;
+    let msg=errMsg(error),status=0,daily=false;
+    try{status=error.context.status;const b=await error.context.json();msg=b.error||msg;daily=!!b.daily}catch(e){}
+    if(status===429&&!daily){onWait?.();await wait(25000);continue}
+    throw new Error(msg);
+  }
+  throw new Error("Die Gratis-KI ist gerade überlastet. Probier es später nochmal.");
+}
+async function processDraft(){
+  const rows=draft.filter(d=>d.name.trim());
+  S.mode="processing";$("#nav").hidden=true;
+  const st=rows.map(r=>({name:r.name.trim(),value:0,img:r.photo,aiImg:false,reason:"Wartet…"}));
+  let note="";
+  const paint=done=>{$("#app").innerHTML=`<div class="stack"><span class="eyebrow">Gutachter am Werk</span><h1>Die KI schaut sich deine Sachen an</h1>
+    <div class="prog"><i style="width:${done/rows.length*100}%"></i></div><p class="mut">${done} von ${rows.length} fertig. ${note||"Bilder malen dauert ein paar Sekunden pro Sache."}</p>
+    <div class="grid">${st.map((s,k)=>`<div class="${k>=done?"working":""}">${card(s)}</div>`).join("")}</div></div>`};
+  paint(0);
+  let ok=0;
+  for(let k=0;k<rows.length;k++){
+    st[k].reason=rows[k].photo?"Wird geschätzt…":"Wird geschätzt und gemalt…";paint(k);
+    try{const it=await appraise(rows[k],()=>{note="Die Gratis-KI braucht eine kurze Pause, gleich geht's weiter…";paint(k)});
+      note="";st[k]=norm(it);S.items.push(norm(it));ok++}
+    catch(e){st[k].reason="Fehlgeschlagen: "+errMsg(e);toast(errMsg(e));if(/Tageslimit|anmelden/.test(errMsg(e)))break}
+    paint(k+1);
+  }
+  await loadItems();
+  S.mode=null;
+  if(mine().length<5&&S.first){toast(`Noch ${5-mine().length} Sachen fehlen.`);setTimeout(()=>{S.mode=null;refresh()},1800);return}
+  S.mode="app";S.tab="inv";toast(`${ok} Sachen im Inventar.`);render();
+}
+
+/* ---------- Ansichten ---------- */
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;S.viewFriend=null;render()});
+function render(){
+  if(S.mode!=="app"||S.spinning)return;
+  if(!$("#modal").hidden&&$("#modal").dataset.keep)return;
+  $("#nav").hidden=false;$("#worth").hidden=false;
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.tab));
+  $("#meName").textContent=(S.profiles[me]?.name||"Dein")+"s Inventar ist wert";
+  $("#worthVal").textContent=eur(sum(mine()));
+  const inc=S.offers.filter(o=>o.to_id===me&&o.status==="pending").length+S.friends.filter(f=>f.status==="pending"&&f.from_id!==me).length+S.trades.filter(t=>t.status==="open"&&t.by_id!==me).length;
+  $("#badge").hidden=!inc;$("#badge").textContent=inc;
+  ({inv:vInv,deal:vDeal,inbox:vInbox,friends:vFriends,case:vCase})[S.tab]();
+}
+
+function vInv(){const m=mine();const best=m[0];
+  $("#app").innerHTML=`<div class="stack">
+  <div class="between"><div class="stack" style="gap:6px"><span class="eyebrow">${m.length} Sachen · Top-Stück: ${best?esc(best.name):"–"}</span><h1>Dein Inventar</h1></div>
+  <button class="btn" id="add">+ Sachen hinzufügen</button></div>
+  ${m.length?`<div class="grid">${m.map(i=>card(i)).join("")}</div>`:`<div class="empty">Alles verzockt. Trag neue Sachen ein, um weiterzuspielen.</div>`}
+  <p class="small mut">Dein Konto hängt an diesem Browser. Wenn du die Browserdaten löschst, ist es weg.</p></div>`;
+  $("#add").onclick=()=>startOnboard(0,false);
+}
+
+function dealHead(fr,f){return `<div class="between"><div class="stack" style="gap:6px"><span class="eyebrow">Mit wem?</span>
+    <div class="chips">${fr.map(u=>`<button class="chipbtn ${u===f?"on":""}" data-f="${esc(u)}">${avatar(u)}${esc(pname(u))}</button>`).join("")}</div></div>
+    <div class="seg"><button data-d="flip" class="${S.dealType==="flip"?"on":""}">Coinflip</button><button data-d="trade" class="${S.dealType==="trade"?"on":""}">Live-Tausch</button></div></div>`}
+function bindHead(){document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{S.friendSel=b.dataset.f;S.give.clear();S.take.clear();render()});
+  document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{S.dealType=b.dataset.d;render()})}
+
+function vDeal(){
+  const fr=friendIds();
+  if(!fr.length){$("#app").innerHTML=`<div class="empty"><h2 style="margin-bottom:8px">Noch niemand am Tisch</h2>Füg erst Freunde hinzu, dann könnt ihr zocken und tauschen.<br><br><button class="btn" id="tf">Freunde finden</button></div>`;$("#tf").onclick=()=>{S.tab="friends";render()};return}
+  if(!fr.includes(S.friendSel)){S.friendSel=fr[0];S.give.clear();S.take.clear()}
+  const f=S.friendSel;
+  if(S.dealType==="trade"){vLive(fr,f);return}
+  const my=mine(),th=itemsOf(f);
+  [...S.give].forEach(id=>{if(item(id)?.owner!==me)S.give.delete(id)});[...S.take].forEach(id=>{if(item(id)?.owner!==f)S.take.delete(id)});
+  const gv=sum([...S.give].map(item)),tv=sum([...S.take].map(item)),p=gv+tv?gv/(gv+tv):.5;
+  $("#app").innerHTML=`<div class="stack">${dealHead(fr,f)}
+  <p class="mut small" style="margin:0">Beide setzen Sachen. Die Münze entscheidet, wer alles bekommt. Wer mehr Wert setzt, hat die bessere Chance.</p>
+  <div class="cols">
+    <div class="panel"><div class="between" style="margin-bottom:14px"><h2>Du setzt</h2><span class="mut small">${S.give.size} gewählt</span></div>
+      ${my.length?`<div class="grid sm" id="gGive">${my.map(i=>card(i,{pick:1,sel:S.give.has(i.id)})).join("")}</div>`:`<div class="empty">Dein Inventar ist leer.</div>`}</div>
+    <div class="panel"><div class="between" style="margin-bottom:14px"><h2>${esc(pname(f))} setzt</h2><span class="mut small">${S.take.size} gewählt</span></div>
+      ${th.length?`<div class="grid sm" id="gTake">${th.map(i=>card(i,{pick:1,sel:S.take.has(i.id)})).join("")}</div>`:`<div class="empty">${esc(pname(f))} hat gerade nichts im Inventar.</div>`}</div>
+  </div>
+  <div class="dealbar"><div><small class="mut">Du</small><div class="side" style="color:var(--gold)">${eur(gv)}</div></div>
+    <div class="odds"><div class="between small"><span>Deine Chance <b>${Math.round(p*100)} %</b></span><span>${Math.round((1-p)*100)} %</span></div><div class="bar"><i style="width:${p*100}%"></i></div></div>
+    <div style="text-align:right"><small class="mut">${esc(pname(f))}</small><div class="side" style="color:var(--hot)">${eur(tv)}</div></div>
+    <button class="btn hot" id="send" ${S.give.size&&S.take.size?"":"disabled"}>Herausfordern</button></div></div>`;
+  bindHead();
+  const pick=(el,set)=>{if(!el)return;const t=e=>{const c=e.target.closest("[data-pick]");if(!c)return;const id=c.dataset.pick;set.has(id)?set.delete(id):set.add(id);render()};
+    el.onclick=t;el.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();t(e)}}};
+  pick($("#gGive"),S.give);pick($("#gTake"),S.take);
+  $("#send").onclick=async()=>{$("#send").disabled=true;
+    const {error}=await sb.from("offers").insert({from_id:me,to_id:f,give:[...S.give],take:[...S.take]});
+    if(error){toast("Senden hat nicht geklappt: "+error.message);$("#send").disabled=false;return}
+    S.give.clear();S.take.clear();toast(`Herausforderung an ${pname(f)} geschickt.`);await loadOffers();S.tab="inbox";render()};
+}
+
+function offerRow(o){const other=o.from_id===me?o.to_id:o.from_id;const iFrom=o.from_id===me;
+  const g=o.give.map(item),t=o.take.map(item);
+  let state="";
+  if(o.status==="pending")state=iFrom?`<span class="pill">wartet</span> <button class="btn ghost sm" data-cancel="${o.id}">Zurückziehen</button>`
+    :`<button class="btn sm hot" data-acc="${o.id}">Annehmen &amp; werfen</button> <button class="btn ghost sm" data-dec="${o.id}">Ablehnen</button>`;
+  else if(o.status==="done")state=`<span class="pill ${o.winner===me?"won":"lost"}">${o.winner===me?"gewonnen":"verloren"}</span>`;
+  else state=`<span class="pill">${({declined:"abgelehnt",cancelled:"zurückgezogen",invalid:"ungültig"})[o.status]||o.status}</span>`;
+  return `<div class="offer"><div class="stack" style="gap:8px"><div class="small mut">${iFrom?"Du setzt":esc(pname(o.from_id))+" setzt"} · <b style="color:var(--fg)">${eur(sum(g))}</b></div><div class="minis">${g.map(mini).join("")}</div></div>
+   <div class="mid">COINFLIP<div style="margin:8px 0">${avatar(other)}</div><div class="small mut" style="font-family:var(--body);font-weight:600">mit ${esc(pname(other))}</div><div style="margin-top:8px">${state}</div></div>
+   <div class="stack" style="gap:8px;align-items:end;text-align:right"><div class="small mut">${iFrom?esc(pname(o.to_id))+" setzt":"Du setzt"} · <b style="color:var(--fg)">${eur(sum(t))}</b></div><div class="minis" style="justify-content:end">${t.map(mini).join("")}</div></div></div>`}
+
+function vInbox(){
+  const inc=S.offers.filter(o=>o.to_id===me&&o.status==="pending"),out=S.offers.filter(o=>o.from_id===me&&o.status==="pending"),hist=S.offers.filter(o=>o.status!=="pending").slice(0,12);
+  const freq=S.friends.filter(f=>f.status==="pending"&&f.from_id!==me),tw=S.trades.filter(t=>t.status==="open");
+  $("#app").innerHTML=`<div class="stack"><span class="eyebrow">Was läuft gerade</span><h1>Angebote</h1>
+  ${freq.length?`<div class="panel stack"><h2>Freundschaftsanfragen</h2>${freq.map(fq=>`<div class="person">${avatar(fq.from_id)}<div class="grow"><b>${esc(pname(fq.from_id))}</b><span class="small mut">will mit dir zocken</span></div><button class="btn sm" data-facc="${esc(fq.id)}">Annehmen</button></div>`).join("")}</div>`:""}
+  ${tw.length?`<div class="panel stack"><h2>Offene Tauschfenster</h2>${tw.map(t=>{const u=t.users.find(x=>x!==me);return `<div class="person on">${avatar(u)}<div class="grow"><b>${esc(pname(u))}</b><span class="small mut">${t.by_id===me?"du hast es geöffnet":"wartet auf dich"} · ${t.items_a.length+t.items_b.length} Sachen auf dem Tisch</span></div><button class="btn sm" data-otw="${esc(u)}">Öffnen</button></div>`}).join("")}</div>`:""}
+  <h2>Coinflips an dich</h2>${inc.length?inc.map(offerRow).join(""):`<div class="empty">Gerade keine offenen Herausforderungen an dich.</div>`}
+  <h2>Von dir</h2>${out.length?out.map(offerRow).join(""):`<div class="empty">Du hast nichts offen. Fordere jemanden unter „Zocken &amp; Traden“ heraus.</div>`}
+  ${hist.length?`<h2>Verlauf</h2>${hist.map(offerRow).join("")}`:""}</div>`;
+  bindOfferBtns();
+}
+function bindOfferBtns(){
+  document.querySelectorAll("[data-otw]").forEach(b=>b.onclick=()=>{S.friendSel=b.dataset.otw;S.dealType="trade";S.tab="deal";render()});
+  document.querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>accept(b.dataset.acc,b));
+  document.querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>respond(b.dataset.dec,"decline"));
+  document.querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>respond(b.dataset.cancel,"cancel"));
+  document.querySelectorAll("[data-facc]").forEach(b=>b.onclick=async()=>{const {error}=await sb.from("friends").update({status:"ok"}).eq("id",b.dataset.facc);
+    if(error)return toast(error.message);toast("Ihr seid jetzt befreundet.");await loadFriends();render()});
+}
+async function respond(id,action){const {error}=await sb.rpc("respond_offer",{p_id:id,p_action:action});if(error)toast(error.message);await loadOffers();render()}
+async function accept(id,btn){btn.disabled=true;
+  const o=S.offers.find(x=>x.id===id);
+  const {data,error}=await sb.rpc("respond_offer",{p_id:id,p_action:"accept"});
+  if(error){toast(error.message);btn.disabled=false;return}
+  if(data.status==="invalid"){toast("Geht nicht mehr: Einige Sachen gehören inzwischen jemand anderem.");await loadOffers();render();return}
+  markSeen(id);coinShow(data.from_id,data.to_id,data.winner,[...o.give,...o.take].map(item).filter(Boolean));
+  loadOffers();loadItems();
+}
+function markSeen(id){const s=lsGet("kc_seen",[]);s.push(id);lsSet("kc_seen",s.slice(-200))}
+function checkResults(){const s=lsGet("kc_seen",[]);
+  const o=S.offers.find(o=>o.from_id===me&&o.status==="done"&&!s.includes(o.id)&&Date.now()-new Date(o.created_at)<864e5);
+  if(o&&$("#modal").hidden&&S.mode==="app"){markSeen(o.id);coinShow(o.from_id,o.to_id,o.winner,[...o.give,...o.take].map(item).filter(Boolean))}}
+
+function coinShow(a,b,winner,pot){
+  const m=$("#modal");m.dataset.keep="1";
+  const face=u=>{const p=S.profiles[u]||{};return `<div class="face ${u===b?"back":""}" style="background:${esc(p.color||"#5b8cff")}">${esc((p.name||"?")[0].toUpperCase())}</div>`};
+  m.innerHTML=`<div class="box"><span class="eyebrow">Coinflip · ${eur(sum(pot))} im Pott</span>
+   <div class="coinwrap"><div class="coin" id="coin">${face(a)}${face(b)}</div></div>
+   <div class="small mut">${esc(S.profiles[a]?.name)} vs. ${esc(S.profiles[b]?.name)}</div><div class="result" id="res">…</div>
+   <div class="minis" style="justify-content:center;margin:14px 0">${pot.map(mini).join("")}</div>
+   <button class="btn ghost" id="close" hidden>Weiter</button></div>`;
+  m.hidden=false;
+  const end=(winner===a?0:180)+360*6;
+  $("#coin").animate([{transform:"rotateY(0) translateY(0)"},{transform:`rotateY(${end/2}deg) translateY(-60px)`},{transform:`rotateY(${end}deg) translateY(0)`}],{duration:2600,easing:"cubic-bezier(.2,.7,.2,1)",fill:"forwards"});
+  setTimeout(()=>{$("#res").innerHTML=winner===me?`<span style="color:var(--ok)">Gewonnen!</span>`:`<span style="color:var(--bad)">${esc(pname(winner))} gewinnt</span>`;$("#close").hidden=false;$("#close").focus()},2700);
+  $("#close").onclick=()=>{m.hidden=true;delete m.dataset.keep;render()};
+}
+
+/* ---------- Live-Tausch ---------- */
+const IC={ok:`<svg viewBox="0 0 48 48"><path d="M8 26c5 3 8 7 11 13C24 24 32 14 42 6" fill="none" stroke="#4cd964" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  plus:`<svg viewBox="0 0 48 48"><path d="M24 7v34M7 24h34" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>`,
+  no:`<svg viewBox="0 0 48 48"><path d="M10 10l28 28M38 10L10 38" stroke="#ff3b30" stroke-width="7" stroke-linecap="round"/></svg>`};
+function vLive(fr,f){
+  const t=S.trades.find(x=>x.status==="open"&&x.users.includes(f));
+  if(!t){$("#app").innerHTML=`<div class="stack">${dealHead(fr,f)}<div class="empty"><h2 style="margin-bottom:8px">Kein Tauschfenster mit ${esc(pname(f))} offen</h2>
+    Öffne eins. Ihr legt beide live Sachen rein, und wenn beide auf ✓ drücken, wird getauscht.<br><br><button class="btn" id="openTw">Tauschfenster öffnen</button></div></div>`;
+    bindHead();$("#openTw").onclick=async()=>{const {error}=await sb.rpc("trade_open",{p_friend:f});if(error)return toast(error.message);await loadTrades();render()};return}
+  const A=t.users[0]===me;
+  const myIds=A?t.items_a:t.items_b,thIds=A?t.items_b:t.items_a;
+  const myIt=myIds.map(item).filter(Boolean),thIt=thIds.map(item).filter(Boolean);
+  const myOk=A?t.ok_a:t.ok_b,thOk=A?t.ok_b:t.ok_a;
+  $("#app").innerHTML=`<div class="stack">${dealHead(fr,f)}
+  <div class="tw">
+    <div class="trow top">
+      <div class="okcell ${thOk?"lit":""}">${IC.ok}<span class="lbl">${thOk?"bereit":"überlegt noch"}</span></div>
+      <div class="who">${avatar(f)}<div><b>${esc(pname(f))}</b><div class="small mut">legt ${eur(sum(thIt))} rein</div></div></div>
+      <div style="opacity:.35">${IC.no}<span class="lbl">kann abbrechen</span></div>
+    </div>
+    <div class="tmid">
+      <div class="tside">${thIt.length?`<div class="grid sm">${thIt.map(i=>card(i)).join("")}</div>`:`<div class="empty">${esc(pname(f))} hat noch nichts reingelegt.</div>`}</div>
+      <div class="tside">${myIt.length?`<div class="grid sm" id="myT">${myIt.map(i=>card(i,{pick:1})).join("")}</div>`:`<div class="empty">Drück unten auf + und leg Sachen rein.</div>`}</div>
+    </div>
+    <div class="trow bot">
+      <button id="twNo">${IC.no}<span class="lbl">Abbrechen</span></button>
+      <button id="twAdd">${IC.plus}<span class="lbl">Du legst ${eur(sum(myIt))} rein</span></button>
+      <button id="twOk" class="okcell ${myOk?"lit":""}">${IC.ok}<span class="lbl">${myOk?"Du bist bereit":"Bereit?"}</span></button>
+    </div>
+  </div>
+  <p class="mut small" style="margin:0">Sobald jemand etwas ändert, wird ✓ bei beiden zurückgesetzt. So kann niemand in letzter Sekunde tricksen.</p></div>`;
+  bindHead();
+  const call=async(fn,args)=>{const {error}=await sb.rpc(fn,{p_id:t.id,...args});if(error)toast(error.message);await loadTrades();if(fn==="trade_set_ok")await loadItems();render()};
+  $("#twNo").onclick=()=>call("trade_cancel",{});
+  $("#twOk").onclick=()=>{if(!myIt.length&&!thIt.length)return toast("Leg erst etwas rein.");call("trade_set_ok",{p_ok:!myOk})};
+  const mt=$("#myT");if(mt)mt.onclick=e=>{const c=e.target.closest("[data-pick]");if(c)call("trade_set_items",{p_items:myIds.filter(x=>x!==c.dataset.pick)})};
+  $("#twAdd").onclick=()=>{const m=$("#modal"),cur=new Set(myIds);m.dataset.keep="1";
+    const paint=()=>{m.innerHTML=`<div class="picker stack"><div class="between"><h2>Was legst du rein?</h2><button class="btn sm" id="pk">Fertig</button></div>
+      ${mine().length?`<div class="grid sm" id="pg">${mine().map(i=>card(i,{pick:1,sel:cur.has(i.id)})).join("")}</div>`:`<div class="empty">Dein Inventar ist leer.</div>`}</div>`;
+      const g=$("#pg");if(g)g.onclick=e=>{const c=e.target.closest("[data-pick]");if(!c)return;cur.has(c.dataset.pick)?cur.delete(c.dataset.pick):cur.add(c.dataset.pick);paint()};
+      $("#pk").onclick=()=>{m.hidden=true;delete m.dataset.keep;call("trade_set_items",{p_items:[...cur]})}};
+    paint();m.hidden=false};
+}
+
+/* ---------- Kisten ---------- */
+function casePool(){const seen=new Set();return S.items.filter(i=>!i.copy_of&&i.owner!==me).filter(i=>{const k=i.name.toLowerCase().trim();if(seen.has(k))return false;seen.add(k);return true})}
+function caseOdds(stake){const p=casePool();const w=p.map(i=>i.value<=stake?Math.pow(i.value/stake,.6):Math.pow(stake/i.value,1.6));const tot=w.reduce((a,b)=>a+b,0)||1;
+  return p.map((i,k)=>({i,p:w[k]/tot})).sort((x,y)=>y.i.value-x.i.value)}
+function pickOdds(od){let r=Math.random();for(const o of od){if((r-=o.p)<0)return o.i}return od[od.length-1].i}
+function vCase(){
+  const my=mine();[...S.stake].forEach(id=>{if(item(id)?.owner!==me)S.stake.delete(id)});
+  const st=sum([...S.stake].map(item)),od=st?caseOdds(st):[],pool=casePool();
+  const ev=od.reduce((a,o)=>a+o.p*o.i.value,0);
+  const preview=pool.slice(0,14);
+  $("#app").innerHTML=`<div class="stack">
+  <div class="stack" style="gap:6px"><span class="eyebrow">${pool.length} Sachen von allen Spieler:innen in der Kiste</span><h1>Die Krimskrams-Kiste</h1></div>
+  <p class="mut" style="margin:0;max-width:62ch">Setz eigene Sachen ein und öffne die Kiste. Drin ist alles, was andere Leute hier eingetragen haben. Je mehr du setzt, desto eher kommt etwas Wertvolles. Dein Einsatz landet in der Kiste und kann von anderen gewonnen werden.</p>
+  <div class="reelbox"><div class="marker"></div><div class="reel" id="reel">${preview.map(i=>card(i)).join("")||'<div class="empty" style="margin:0 20px;flex:1">Die Kiste ist noch fast leer. Sobald andere Leute Sachen eintragen, landen sie hier.</div>'}</div></div>
+  <div class="dealbar"><div><small class="mut">Einsatz</small><div class="side" style="color:var(--gold)">${eur(st)}</div></div>
+    <div class="odds small mut">${st?`Im Schnitt kommt etwas im Wert von <b style="color:var(--fg)">${eur(ev)}</b> raus. Chance auf mehr als deinen Einsatz: <b style="color:var(--fg)">${Math.round(od.filter(o=>o.i.value>st).reduce((a,o)=>a+o.p,0)*100)} %</b>`:"Wähl unten Sachen als Einsatz."}</div>
+    <button class="btn hot" id="spin" ${st&&pool.length>=3?"":"disabled"}>Kiste öffnen</button></div>
+  <div class="cols">
+    <div class="panel"><div class="between" style="margin-bottom:14px"><h2>Dein Einsatz</h2><span class="mut small">${S.stake.size} gewählt</span></div>
+      ${my.length?`<div class="grid sm" id="gStake">${my.map(i=>card(i,{pick:1,sel:S.stake.has(i.id)})).join("")}</div>`:`<div class="empty">Nichts mehr da zum Setzen.</div>`}</div>
+    <div class="panel"><h2 style="margin-bottom:14px">Was drin ist</h2>
+      ${st?`<div class="odds-list">${od.map(o=>`<div class="r">${mini(o.i)}<div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.i.name)}</div><div class="small mut">${eur(o.i.value)} · ${o.i.owner?"von "+esc(pname(o.i.owner)):"liegt in der Kiste"}</div></div><b>${o.p<.001?"<0,1":(o.p*100).toLocaleString("de-DE",{maximumFractionDigits:1})} %</b></div>`).join("")}</div>`
+        :`<div class="small mut">Die Chancen siehst du, sobald du einen Einsatz wählst.</div>`}</div>
+  </div></div>`;
+  const g=$("#gStake");if(g)g.onclick=e=>{const c=e.target.closest("[data-pick]");if(!c)return;const id=c.dataset.pick;S.stake.has(id)?S.stake.delete(id):S.stake.add(id);render()};
+  $("#spin").onclick=()=>spinCase(st,od);
+}
+async function spinCase(st,od){
+  $("#spin").disabled=true;S.spinning=true;
+  const {data,error}=await sb.rpc("open_case",{p_stake:[...S.stake]});
+  if(error){S.spinning=false;toast(error.message);render();return}
+  const win=norm(data.item);
+  const W=160,N=64,WI=56,strip=Array.from({length:N},(_,k)=>k===WI?win:pickOdds(od));
+  const reel=$("#reel");reel.innerHTML=strip.map(i=>card(i)).join("");
+  const box=reel.parentElement.clientWidth,x=-(WI*W+75-box/2+(Math.random()*110-55));
+  const anim=reel.animate([{transform:"translateX(0)"},{transform:`translateX(${x}px)`}],{duration:6500,easing:"cubic-bezier(.08,.6,.1,1)",fill:"forwards"});
+  await anim.finished.catch(()=>{});
+  reel.children[WI].classList.add("sel");
+  toast(win.value>st?`Jackpot! ${win.name} (${eur(win.value)})`:`Du bekommst ${win.name} (${eur(win.value)})`);
+  S.stake.clear();await loadItems();
+  setTimeout(()=>{S.spinning=false;render()},2200);
+}
+
+/* ---------- Freunde ---------- */
+function vFriends(){
+  if(S.viewFriend){const f=S.viewFriend,its=itemsOf(f);
+    $("#app").innerHTML=`<div class="stack"><button class="btn ghost sm" id="back" style="align-self:start">← Alle Freunde</button>
+    <div class="between"><div style="display:flex;gap:14px;align-items:center">${avatar(f)}<div><span class="eyebrow">${its.length} Sachen · ${eur(sum(its))}</span><h1>${esc(pname(f))}s Inventar</h1></div></div>
+    <button class="btn hot" id="ch">Herausfordern</button></div>
+    ${its.length?`<div class="grid">${its.map(i=>card(i)).join("")}</div>`:`<div class="empty">Noch leer.</div>`}</div>`;
+    $("#back").onclick=()=>{S.viewFriend=null;render()};$("#ch").onclick=()=>{S.friendSel=f;S.tab="deal";S.viewFriend=null;render()};return}
+  const fr=friendIds(),pend=S.friends.filter(f=>f.status==="pending");
+  $("#app").innerHTML=`<div class="stack"><span class="eyebrow">Dein Tisch</span><h1>Freunde</h1>
+  <div class="cols">
+    <div class="panel stack"><h2>Freund hinzufügen</h2>
+      <p class="small mut" style="margin:0">Schick deinen Freunden den Link zu dieser Seite. Sobald sie sich einen Namen geben, findest du sie hier. Dein Name ist <b style="color:var(--fg)">${esc(S.profiles[me]?.name)}</b>.</p>
+      <input type="text" id="q" placeholder="Name suchen …" autocomplete="off">
+      <div class="ppl" id="res"></div></div>
+    <div class="panel stack"><h2>Deine Freunde (${fr.length})</h2>
+      <div class="ppl">${fr.length?fr.map(u=>{const its=itemsOf(u);return `<div class="person">${avatar(u)}<div class="grow"><b>${esc(pname(u))}</b><span class="small mut">${its.length} Sachen · ${eur(sum(its))}</span></div>
+        <button class="btn ghost sm" data-view="${esc(u)}">Inventar</button><button class="btn sm hot" data-chal="${esc(u)}">Zocken</button></div>`}).join(""):`<div class="empty">Noch keine Freunde. Such links nach jemandem.</div>`}
+      ${pend.filter(p=>p.from_id===me).map(p=>{const u=p.users.find(x=>x!==me);return `<div class="person">${avatar(u)}<div class="grow"><b>${esc(pname(u))}</b><span class="small mut">Anfrage gesendet</span></div></div>`}).join("")}
+      ${pend.filter(p=>p.from_id!==me).map(p=>`<div class="person on">${avatar(p.from_id)}<div class="grow"><b>${esc(pname(p.from_id))}</b><span class="small mut">will dein Freund sein</span></div><button class="btn sm" data-facc="${esc(p.id)}">Annehmen</button></div>`).join("")}</div></div>
+  </div></div>`;
+  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{S.viewFriend=b.dataset.view;render()});
+  document.querySelectorAll("[data-chal]").forEach(b=>b.onclick=()=>{S.friendSel=b.dataset.chal;S.tab="deal";render()});
+  bindOfferBtns();
+  const q=$("#q");let tmr;
+  const run=async()=>{const v=q.value.trim().replace(/[%_,()]/g,"");const box=$("#res");
+    if(v.length<2){box.innerHTML="";return}
+    const {data}=await sb.from("profiles").select("id,name,color").ilike("name",`%${v}%`).neq("id",me).limit(8);
+    if(!data?.length){box.innerHTML=`<div class="small mut">Niemand mit diesem Namen gefunden.</div>`;return}
+    data.forEach(p=>S.profiles[p.id]=p);
+    box.innerHTML=data.map(p=>{const rel=S.friends.find(f=>f.users.includes(p.id));
+      return `<div class="person">${avatar(p.id)}<div class="grow"><b>${esc(p.name)}</b></div>${rel?`<span class="pill">${rel.status==="ok"?"befreundet":"angefragt"}</span>`:`<button class="btn sm" data-add="${esc(p.id)}">+ Hinzufügen</button>`}</div>`}).join("");
+    box.querySelectorAll("[data-add]").forEach(b=>b.onclick=async()=>{const u=b.dataset.add,users=[me,u].sort();
+      const {error}=await sb.from("friends").insert({id:users.join("__"),users,from_id:me});
+      if(error)return toast(error.code==="23505"?"Ihr habt schon eine Anfrage offen.":"Anfrage hat nicht geklappt.");
+      toast("Anfrage geschickt.");await loadFriends();render()})};
+  q.oninput=()=>{clearTimeout(tmr);tmr=setTimeout(run,250)};
+}
+</script>
+</body></html>
