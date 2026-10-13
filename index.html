@@ -339,7 +339,7 @@ async function appraise(r,onWait){
     if(!error)return data.item;
     let msg=errMsg(error),status=0,daily=false;
     try{status=error.context.status;const b=await error.context.json();msg=b.error||msg;daily=!!b.daily}catch(e){}
-    if(status===429&&!daily){onWait?.();await wait(25000);continue}
+    if((status===429||status===503)&&!daily){onWait?.();await wait(20000);continue}
     throw new Error(msg);
   }
   throw new Error("Die Gratis-KI ist gerade überlastet. Probier es später nochmal.");
@@ -353,17 +353,21 @@ async function processDraft(){
     <div class="prog"><i style="width:${done/rows.length*100}%"></i></div><p class="mut">${done} von ${rows.length} fertig. ${note||"Bilder malen dauert ein paar Sekunden pro Sache."}</p>
     <div class="grid">${st.map((s,k)=>`<div class="${k>=done?"working":""}">${card(s)}</div>`).join("")}</div></div>`};
   paint(0);
-  let ok=0;
+  let ok=0;const failed=[];
   for(let k=0;k<rows.length;k++){
     st[k].reason=rows[k].photo?"Wird geschätzt…":"Wird geschätzt und gemalt…";paint(k);
     try{const it=await appraise(rows[k],()=>{note="Die Gratis-KI braucht eine kurze Pause, gleich geht's weiter…";paint(k)});
       note="";st[k]=norm(it);S.items.push(norm(it));ok++}
-    catch(e){st[k].reason="Fehlgeschlagen: "+errMsg(e);toast(errMsg(e));if(/Tageslimit|anmelden/.test(errMsg(e)))break}
+    catch(e){st[k].reason="Fehlgeschlagen: "+errMsg(e);toast(errMsg(e));failed.push(rows[k]);if(/Tageslimit|anmelden/.test(errMsg(e))){failed.push(...rows.slice(k+1));break}}
     paint(k+1);
   }
   await loadItems();
   S.mode=null;
-  if(mine().length<5&&S.first){toast(`Noch ${5-mine().length} Sachen fehlen.`);setTimeout(()=>{S.mode=null;refresh()},1800);return}
+  if(failed.length){
+    setTimeout(()=>{const first=mine().length<5;startOnboard(first?5-mine().length:0,first);
+      draft=failed.map(r=>({name:r.name,note:r.note,photo:r.photo}));renderSlots();
+      toast(`${failed.length} Sachen haben nicht geklappt. Sie stehen noch drin, drück einfach nochmal auf Schätzen.`)},2000);
+    return}
   S.mode="app";S.tab="inv";toast(`${ok} Sachen im Inventar.`);render();
 }
 
